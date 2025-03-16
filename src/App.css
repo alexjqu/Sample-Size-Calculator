@@ -43,3 +43,18 @@ button:hover {
   margin-top: 20px;
   font-size: 1.2em;
 }
+
+.group-buttons button {
+  margin: 5px;
+  padding: 10px;
+  border: 1px solid #ccc;
+  background-color: white;
+  color: black;
+  cursor: pointer;
+}
+
+.group-buttons button.active {
+  background-color: #007bff;
+  color: white;
+  border-color: #007bff;
+}
