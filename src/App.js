@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import './App.css';
+import { jStat } from 'jstat';
 
 function SampleSizeCalculator() {
   const [numGroups, setNumGroups] = useState('One');
@@ -7,11 +8,12 @@ function SampleSizeCalculator() {
   const [numSides, setNumSides] = useState('1-Sided');
   const [meanHistCtrl, setMeanHistCtrl] = useState('0.2');
   const [meanTreatment, setMeanTreatment] = useState('0.5');
-  const [stdev, setStdev] = useState('1')
-  const [type1, setType1] = useState('0.05')
-  const [power, setPower] = useState('0.8')
+  const [stdev, setStdev] = useState('1');
+  const [type1, setType1] = useState('0.05');
+  const [power, setPower] = useState('0.8');
+  const [sampleSize, setSampleSize] = useState(null);
+  const [error, setError] = useState(null);
 
-  // Single handler for both inputs
   const handleInputChange = (event) => {
     const { name, value } = event.target;
     if (/^\d*\.?\d*$/.test(value) && (value.match(/\./g) || []).length <= 1) {
@@ -21,14 +23,72 @@ function SampleSizeCalculator() {
         setMeanTreatment(value);
       } else if (name === 'stdev') {
         setStdev(value);
-      } else if (name === 'Type 1 Error') {numGroups
+      } else if (name === 'Type 1 Error') {
         setType1(value);
       } else if (name === 'Power') {
         setPower(value);
       }
     }
+  };
 
-    
+  const calculateSampleSize = () => {
+    const muC = parseFloat(meanHistCtrl);
+    const muT = parseFloat(meanTreatment);
+    const s = parseFloat(stdev);
+    const alpha = parseFloat(type1);
+    const beta = 1 - parseFloat(power);
+    const epsilon = muT - muC;
+
+    let n = 1;
+    let solved = false;
+    const maxIterations = 10000; // Maximum number of iterations to prevent infinite loops
+    let iterations = 0;
+
+    while (!solved && iterations < maxIterations) {
+      let theta;
+      let tValue;
+
+      if (testObjective === 'Equality') {
+        if (numSides === '1-Sided') {
+          tValue = jStat.studentt.inv(1 - alpha, n - 1);
+          theta = (Math.sqrt(n) * Math.abs(epsilon)) / s;
+        } else {
+          tValue = jStat.studentt.inv(1 - alpha / 2, n - 1);
+          theta = (Math.sqrt(n) * Math.abs(epsilon)) / s;
+        }
+      } else if (testObjective === 'Equivalence') {
+        tValue = jStat.studentt.inv(1 - alpha, n - 1);
+        theta = (Math.sqrt(n) * (delta - Math.abs(epsilon))) / s;
+      } else if (testObjective === 'Noninferiority') {
+        const delta = 0.1; // Example noninferiority margin, you can make this configurable
+        tValue = jStat.studentt.inv(1 - alpha, n - 1);
+        theta = (Math.sqrt(n) * (epsilon + delta)) / s;
+      } else if (testObjective === 'Superiority') {
+        const delta = 0.1; // Example superiority margin, you can make this configurable
+        tValue = jStat.studentt.inv(1 - alpha, n - 1);
+        theta = (Math.sqrt(n) * (epsilon - delta)) / s;
+      }
+
+      // const powerCalc = 1 - jStat.studentt.cdf(tValue, n - 1, theta);
+      const powerCalc = 1-jStat.normal.cdf( tValue, theta, s )
+
+      console.log(powerCalc)
+
+      if (powerCalc >= 1 - beta) {
+        solved = true;
+        setSampleSize(n);
+        setError(null); // Clear any previous errors
+      } else {
+        n++;
+      }
+
+      iterations++;
+    }
+
+    if (!solved) {
+      setError('Sample size calculation failed to converge. Please check your inputs.');
+      setSampleSize(null);
+    }
   };
 
   return (
@@ -111,7 +171,9 @@ function SampleSizeCalculator() {
             placeholder="0.8"
           />
         </label>
-        <button>Calculate Sample Size</button>
+        <button onClick={calculateSampleSize}>Calculate Sample Size</button>
+        {sampleSize && <p>Required Sample Size: {sampleSize}</p>}
+        {error && <p style={{ color: 'red' }}>{error}</p>}
       </div>
     </div>
   );
