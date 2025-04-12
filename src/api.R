@@ -1,8 +1,8 @@
 library(pwrss)
 library(plumber)
 
-# 2 (independent), test obj = equality
-#* @post /calculate
+# 2 (independent), test.t obj = equality
+#* @post /twoIndepEquality
 #* @param mu1:double
 #* @param mu2:double
 #* @param sd1:double
@@ -11,7 +11,7 @@ library(plumber)
 #* @param power:double
 #* @param alpha:double
 #* @param method:string
-twoindepequality <- function(mu1, mu2, sd1, sd2, kappa = 1, power = 0.8, alpha = 0.05, method = "t") {
+twoIndepEquality <- function(mu1, mu2, sd1, sd2, kappa = 1, power = 0.8, alpha = 0.05, method = "t") {
   if (method == "t") {
     result <- pwrss.t.2means(mu1, mu2, sd1, sd2, kappa, power, alpha, alternative = "not equal")
   } else {

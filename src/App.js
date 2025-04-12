@@ -39,36 +39,38 @@ function SampleSizeCalculator() {
   };
 
   const sampleSizeCalc = async () => {
-    try {
-      const response = await fetch("http://127.0.0.1:29268/calculate", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          mu1: parseFloat(meanTreatment),
-          mu2: parseFloat(meanHistCtrl),
-          sd1: parseFloat(stdev),
-          sd2: parseFloat(stdev),
-          kappa: parseFloat(allocationRatio),
-          power: parseFloat(power),
-          alpha: parseFloat(type1),
-          method: "t" // or "z" for z-test
-        }),
-      });
-  
-      const data = await response.json();
-      if (data.n1 !== undefined) {
-        setSampleSize(`Group 1: ${Math.ceil(data.n1)}, Group 2: ${Math.ceil(data.n2)}`);
-        setError(null);
-      } else {
-        setError("Error calculating sample size.");
+    if (numGroups === 'Two (independent)') {
+      try {
+        const response = await fetch("http://127.0.0.1:29268/twoIndepEquality", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            mu1: parseFloat(meanTreatment),
+            mu2: parseFloat(meanHistCtrl),
+            sd1: parseFloat(stdev),
+            sd2: parseFloat(stdev),
+            kappa: parseFloat(allocationRatio),
+            power: parseFloat(power),
+            alpha: parseFloat(type1),
+            method: "t" // or "z" for z-test
+          }),
+        });
+    
+        const data = await response.json();
+        if (data.n1 !== undefined) {
+          setSampleSize(`Group 1: ${Math.ceil(data.n1)}, Group 2: ${Math.ceil(data.n2)}`);
+          setError(null);
+        } else {
+          setError("Error calculating sample size.");
+          setSampleSize(null);
+        }
+      } catch (err) {
+        console.error(err);
+        setError("Failed to connect to backend.");
         setSampleSize(null);
       }
-    } catch (err) {
-      console.error(err);
-      setError("Failed to connect to backend.");
-      setSampleSize(null);
     }
   };
   
